@@ -1,0 +1,12 @@
+{
+  "name": "dual-protocol-script-fix",
+  "private": true,
+  "scripts": {
+    "test:panel": "node scripts/test_panel.cjs",
+    "format:panel": "prettier --write web/*"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1",
+    "prettier": "3.9.10"
+  }
+}

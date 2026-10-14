@@ -1,0 +1,5 @@
+// Copy to the repository root as live_vpngate_test.go to run an opt-in API
+// compatibility check. Does not connect VPNs or change host networking.
+package main
+import("testing";"time")
+func TestLiveVPNGateProfiles(t *testing.T){nodes,e:=fetchNodes(30*time.Second);if e!=nil{t.Fatal(e)};accepted,legacy:=0,0;reasons:=map[string]int{};for _,n:=range nodes{p,e:=normalizeVPNProfile(n);if e!=nil{reasons[e.Error()]++;continue};accepted++;if p.LegacyCertificate{legacy++}};t.Logf("official API: nodes=%d accepted=%d legacy-client-cert=%d rejected=%v",len(nodes),accepted,legacy,reasons);if accepted==0{t.Fatal("all official profiles rejected")}}
