@@ -1,0 +1,71 @@
+name: test-and-release
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.x"
+          cache: true
+      - name: Install validation dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y python3-yaml iproute2 caddy
+      - run: go test -race ./...
+      - run: go vet ./...
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+      - name: Browser regression
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run test:panel
+      - name: Verify shell and storage transactions
+        run: |
+          for script in install.sh start-panel.sh node-installer.sh lib/*.sh tui-wrapper.sh sync-panel-tls.sh uninstall.sh scripts/test_backend.sh; do bash -n "$script"; done
+          python3 -m unittest discover -s scripts -p 'test_*.py'
+          bash scripts/test_backend.sh
+      - name: Isolated namespace integration
+        run: |
+          go test -c -o /tmp/dps-integration.test .
+          sudo env DPS_RUN_INTEGRATION=1 /tmp/dps-integration.test -test.run '^TestLinux(NamespaceDialAndRestore|StoppedReconnectCannotDeleteReusedNamespace)$' -test.v
+          sudo env DPS_RUN_INTEGRATION=1 /tmp/dps-integration.test -test.run '^TestLinuxNode' -test.v -test.timeout 4m
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.x"
+      - name: Build package
+        env:
+          GOOS: linux
+          GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: "0"
+        run: |
+          mkdir -p dist/package/scripts dist/package/lib
+          go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" -o dist/package/dual-protocol-script-fix .
+          cp install.sh start-panel.sh node-installer.sh uninstall.sh tui-wrapper.sh sync-panel-tls.sh dual-protocol-script-fix.service LICENSE NOTICE.md README.md dist/package/
+          cp lib/*.sh dist/package/lib/
+          cp scripts/storage.py scripts/migrate.py dist/package/scripts/
+          tar -C dist/package -czf "dist/dual-protocol-script-fix-linux-${GOARCH}.tar.gz" .
+          cd dist && sha256sum "dual-protocol-script-fix-linux-${GOARCH}.tar.gz" > "dual-protocol-script-fix-linux-${GOARCH}.tar.gz.sha256"
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/dual-protocol-script-fix-linux-${{ matrix.arch }}.tar.gz
+            dist/dual-protocol-script-fix-linux-${{ matrix.arch }}.tar.gz.sha256
