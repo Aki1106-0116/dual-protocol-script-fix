@@ -13,7 +13,7 @@
 
 要求 Debian/Ubuntu、systemd、root、可用的 `/dev/net/tun`。域名解析必须直连 VPS。安全组开放 TCP 80/443、HY2 UDP 单端口或范围、面板 TCP 高位端口。
 
-把**本目录全部内容（含 `.github`、`lib`、`web`、`scripts`）**上传到仓库 `Aki1106-0116/dual-protocol-script-fix` 的根目录。发布后使用以下命令安装：
+使用以下命令安装：
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/Aki1106-0116/dual-protocol-script-fix/main/install.sh)
