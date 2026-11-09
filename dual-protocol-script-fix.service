@@ -1,0 +1,17 @@
+[Unit]
+Description=Dual Protocol Fix - VPN Gate home-IP egress controller
+After=network-online.target xray.service hysteria-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/lib/dual-protocol-script-fix/start-panel.sh
+Restart=on-failure
+RestartSec=5s
+KillMode=mixed
+TimeoutStopSec=100s
+LimitNOFILE=1048576
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

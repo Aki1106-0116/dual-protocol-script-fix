@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Dual Protocol Fix</title>
+    <link rel="stylesheet" href="assets/style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="brand">
+          <div class="logo">DP</div>
+          <div>
+            <h1>Dual Protocol Fix</h1>
+            <p id="stack">读取节点组合…</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="share">分享链接</button
+          ><button class="btn" id="serviceControl">重启服务</button
+          ><button class="btn" id="panelSettings">面板设置</button
+          ><button class="btn" id="configure">节点配置</button
+          ><button class="btn danger" id="reinstall">重装组合</button
+          ><button class="btn" id="refresh">刷新节点池 ↻</button
+          ><button class="btn primary" id="add">＋ 新建出口</button>
+        </div>
+      </header>
+      <section class="hero">
+        <div>
+          <span class="eyebrow">YOUR PRIVATE NETWORK</span>
+          <h2>连接，尽在掌握。</h2>
+          <p>两种协议 · 独立出口 · 轻量管理</p>
+        </div>
+        <span class="hero-badge" id="healthBadge">正在检查状态</span>
+      </section>
+      <nav class="nav" aria-label="面板分区">
+        <button class="active" data-view="overview">协议与节点</button
+        ><button data-view="exitsView">家宽出口</button
+        ><button data-view="settingsView">管理工具</button>
+      </nav>
+      <div class="notice" id="error"></div>
+      <main>
+        <div class="view" id="overview">
+          <div class="section-head">
+            <div>
+              <h2>协议出口</h2>
+              <p>两个协议可分别选择 VPS 直连或指定的 VPN Gate 家宽出口</p>
+            </div>
+          </div>
+          <section class="routing" id="routing"></section>
+        </div>
+        <div class="view hidden" id="exitsView">
+          <div class="section-head">
+            <div>
+              <h2>VPN Gate 家宽出口</h2>
+              <p>切换节点时槽位与本地 SOCKS5 端口保持不变</p>
+            </div>
+            <span id="count"></span>
+          </div>
+          <section class="exits" id="exits"></section>
+          <section class="jobs" id="jobs"></section>
+        </div>
+        <div class="view hidden" id="settingsView">
+          <section class="route-card">
+            <h2>管理工具</h2>
+            <p style="color: var(--muted)">
+              日常调整、服务维护和面板访问设置。
+            </p>
+            <div class="actions" style="justify-content: flex-start">
+              <button class="btn" data-open="configure">节点配置</button
+              ><button class="btn" data-open="serviceControl">重启服务</button
+              ><button class="btn" data-open="panelSettings">面板设置</button
+              ><button class="btn danger" data-open="reinstall">
+                重装组合
+              </button>
+            </div>
+          </section>
+        </div>
+      </main>
+      <div class="footer">
+        <span>面板使用 HY2 域名 + TLS + 随机高位端口 + 随机路径 + 密码</span
+        ><span>SOCKS5 仅监听 127.0.0.1</span>
+      </div>
+    </div>
+
+    <div class="modal" id="exitModal">
+      <div class="dialog">
+        <div class="dialog-head">
+          <h3>创建家宽出口</h3>
+          <button class="close" data-close="exitModal">×</button>
+        </div>
+        <div class="field">
+          <label>地区</label
+          ><select id="region"></select>
+          <div class="field-note" id="regionInfo"></div>
+        </div>
+        <div class="field">
+          <label>数量</label
+          ><input id="quantity" type="number" min="1" max="12" value="1" />
+        </div>
+        <div class="dialog-actions">
+          <button class="btn" data-close="exitModal">取消</button
+          ><button class="btn primary" id="create">开始连接</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="configModal">
+      <div class="dialog wide">
+        <div class="dialog-head">
+          <div>
+            <h3 id="configTitle">节点配置</h3>
+            <div class="field-note" id="configMode">读取当前组合…</div>
+          </div>
+          <button class="close" data-close="configModal">×</button>
+        </div>
+        <div class="field hidden" id="targetWrap">
+          <label>要重装的协议组合</label
+          ><select id="cfgTarget">
+            <option value="xhttp">VLESS XHTTP + Hysteria2</option>
+            <option value="reality">VLESS REALITY Vision + Hysteria2</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <h4>通用</h4>
+          <div class="form-grid">
+            <div class="field">
+              <label>节点名称 *</label><input id="cfgNodeName" maxlength="80" />
+            </div>
+            <div class="field">
+              <label>客户端 uTLS 指纹 *</label
+              ><select id="cfgFP">
+                <option value="chrome">chrome</option>
+                <option value="firefox">firefox</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="form-group hidden" id="xhttpFields">
+          <h4>VLESS XHTTP</h4>
+          <div class="form-grid">
+            <div class="field">
+              <label>XHTTP 域名 *</label
+              ><input id="cfgXHTTPDomain" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label>XHTTP 路径 *</label>
+              <div class="input-row">
+                <input id="cfgXHTTPPath" autocomplete="off" /><button
+                  class="btn small"
+                  type="button"
+                  data-generate="path"
+                >
+                  随机
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>XHTTP UUID *</label>
+              <div class="input-row">
+                <input id="cfgXHTTPUUID" autocomplete="off" /><button
+                  class="btn small"
+                  type="button"
+                  data-generate="xuuid"
+                >
+                  随机
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>本机后端端口 *</label
+              ><input
+                id="cfgXHTTPBackendPort"
+                type="number"
+                min="1024"
+                max="65535"
+              />
+            </div>
+          </div>
+          <div class="config-warning">
+            修改 XHTTP 域名前，请先确认新域名已正确解析到本 VPS，Cloudflare/CDN
+            代理已关闭，并放行 TCP 80/443。签发失败会自动恢复旧配置。
+          </div>
+        </div>
+        <div class="form-group hidden" id="realityFields">
+          <h4>VLESS REALITY Vision</h4>
+          <div class="form-grid">
+            <div class="field">
+              <label>客户端连接地址（VPS IP 或域名）*</label
+              ><input id="cfgRealityAddress" />
+            </div>
+            <div class="field">
+              <label>目标 SNI *</label><input id="cfgRealitySNI" />
+            </div>
+            <div class="field">
+              <label>REALITY UUID *</label>
+              <div class="input-row">
+                <input id="cfgRealityUUID" /><button
+                  class="btn small"
+                  type="button"
+                  data-generate="ruuid"
+                >
+                  随机
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>当前公钥（只读）</label
+              ><input id="cfgRealityPublicKey" readonly />
+            </div>
+            <div class="field">
+              <label>当前 Short ID（只读）</label
+              ><input id="cfgRealityShortID" readonly />
+            </div>
+            <div class="field">
+              <label>Hysteria2 ACME 邮箱 *</label
+              ><input id="cfgHY2ACMEEmail" type="email" />
+            </div>
+            <label class="check full"
+              ><input id="cfgRotateReality" type="checkbox" />保存时生成并验证新
+              REALITY 密钥和 Short ID</label
+            >
+          </div>
+        </div>
+        <div class="form-group">
+          <h4>Hysteria2</h4>
+          <div class="form-grid">
+            <div class="field">
+              <label>HY2 域名（也是面板 TLS 域名）*</label
+              ><input id="cfgHY2Domain" />
+            </div>
+            <div class="field">
+              <label>HY2 密码 *</label>
+              <div class="input-row">
+                <input id="cfgHY2Password" type="password" /><button
+                  class="btn small"
+                  type="button"
+                  data-generate="hy2pass"
+                >
+                  随机
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>端口模式 *</label
+              ><select id="cfgHY2PortMode">
+                <option value="hop">端口跳跃</option>
+                <option value="single">单端口</option>
+              </select>
+            </div>
+            <div class="field" id="singlePortField">
+              <label>UDP 端口 *</label
+              ><input id="cfgHY2Port" type="number" min="1" max="65535" />
+            </div>
+            <div class="field" id="firstPortField">
+              <label>跳跃起始/主端口 *</label
+              ><input id="cfgHY2FirstPort" type="number" min="1" max="65534" />
+            </div>
+            <div class="field" id="endPortField">
+              <label>跳跃结束端口 *</label
+              ><input id="cfgHY2EndPort" type="number" min="2" max="65535" />
+            </div>
+            <div class="field" id="hopTypeField">
+              <label>跳跃间隔模式 *</label
+              ><select id="cfgHopType">
+                <option value="fixed">固定</option>
+                <option value="random">随机范围</option>
+              </select>
+            </div>
+            <div class="field" id="fixedHopField">
+              <label>固定间隔（秒）*</label
+              ><input id="cfgHY2HopInterval" type="number" min="5" max="600" />
+            </div>
+            <div class="field" id="minHopField">
+              <label>最小间隔（秒）*</label
+              ><input
+                id="cfgHY2MinHopInterval"
+                type="number"
+                min="5"
+                max="600"
+              />
+            </div>
+            <div class="field" id="maxHopField">
+              <label>最大间隔（秒）*</label
+              ><input
+                id="cfgHY2MaxHopInterval"
+                type="number"
+                min="5"
+                max="600"
+              />
+            </div>
+            <div class="field">
+              <label>混淆</label
+              ><select id="cfgHY2ObfsType">
+                <option value="none">不启用（推荐）</option>
+                <option value="gecko">Gecko</option>
+              </select>
+            </div>
+            <div class="field hidden" id="obfsPasswordField">
+              <label>Gecko 密码 *</label>
+              <div class="input-row">
+                <input id="cfgHY2ObfsPassword" type="password" /><button
+                  class="btn small"
+                  type="button"
+                  data-generate="geckopass"
+                >
+                  随机
+                </button>
+              </div>
+            </div>
+            <div class="field hidden" id="geckoMinField">
+              <label>Gecko 最小分片 *</label
+              ><input id="cfgGeckoMin" type="number" min="64" max="1500" />
+            </div>
+            <div class="field hidden" id="geckoMaxField">
+              <label>Gecko 最大分片 *</label
+              ><input id="cfgGeckoMax" type="number" min="64" max="1500" />
+            </div>
+          </div>
+          <div class="config-warning">
+            修改 HY2 域名会同时更换面板 TLS 域名。请先确认 DNS 直连本 VPS、CDN
+            代理关闭，并放行 ACME
+            所需端口；新证书验证成功后才会提交配置并清理旧域名证书。
+          </div>
+        </div>
+        <div class="config-warning" id="configWarning">
+          保存会先校验候选配置，再重启并检查代理；任何一步失败都会恢复旧配置。
+        </div>
+        <div class="dialog-actions">
+          <button class="btn" data-close="configModal">取消</button
+          ><button class="btn primary" id="saveConfig">保存并重启代理</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="shareModal">
+      <div class="dialog wide">
+        <div class="dialog-head">
+          <h3>节点分享链接</h3>
+          <button class="close" data-close="shareModal">×</button>
+        </div>
+        <div class="field">
+          <label>主节点</label><textarea id="mainURL" readonly></textarea
+          ><button class="btn small" data-copy="mainURL">复制主节点</button>
+        </div>
+        <div class="field">
+          <label>Hysteria2</label><textarea id="hy2URL" readonly></textarea
+          ><button class="btn small" data-copy="hy2URL">复制 HY2</button>
+        </div>
+        <div class="field">
+          <label>完整节点信息</label
+          ><textarea
+            id="nodeInfo"
+            readonly
+            style="min-height: 180px"
+          ></textarea>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn" data-close="shareModal">关闭</button
+          ><button class="btn" data-download="xray_client_json">
+            Xray JSON</button
+          ><button class="btn" data-download="hy2_client_yaml">HY2 YAML</button
+          ><button class="btn" data-download="hy2_client_json">HY2 JSON</button
+          ><button class="btn primary" id="downloadLinks">下载 TXT</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="panelModal">
+      <div class="dialog">
+        <div class="dialog-head">
+          <h3>面板设置</h3>
+          <button class="close" data-close="panelModal">×</button>
+        </div>
+        <div class="field">
+          <label>TLS 域名（跟随 HY2，不在这里修改）</label
+          ><input id="panelDomain" readonly />
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label>高位 TLS 端口</label
+            ><input id="panelPort" type="number" min="10240" max="65535" />
+          </div>
+          <div class="field">
+            <label>最大家宽出口数</label
+            ><input id="panelMax" type="number" min="1" max="200" />
+          </div>
+        </div>
+        <div class="field">
+          <label>随机访问路径（6-64 位，不含斜杠）</label>
+          <div class="input-row">
+            <input id="panelPath" /><button
+              class="btn small"
+              type="button"
+              id="randomPanelPath"
+            >
+              随机
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label>新面板密码（留空表示不修改，至少 8 位）</label>
+          <div class="input-row">
+            <input
+              id="panelPassword"
+              type="password"
+              autocomplete="new-password"
+            /><button class="btn small" type="button" id="randomPanelPassword">
+              随机
+            </button>
+          </div>
+        </div>
+        <div class="config-warning">
+          保存后面板服务会重启。请使用新端口、路径或密码重新登录；TLS
+          域名仍由节点的 HY2 域名决定。
+        </div>
+        <div class="dialog-actions">
+          <button class="btn" data-close="panelModal">取消</button
+          ><button class="btn primary" id="savePanel">保存并重启面板</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal" id="serviceModal">
+      <div class="dialog">
+        <div class="dialog-head">
+          <div>
+            <h3>一键重启代理服务</h3>
+            <div class="field-note" id="serviceStack">读取当前组合…</div>
+          </div>
+          <button class="close" data-close="serviceModal">×</button>
+        </div>
+        <div class="config-warning">
+          重启会造成短暂断线。系统会在重启后检查服务是否处于 active 状态。
+        </div>
+        <div class="form-grid">
+          <button
+            class="btn"
+            style="margin-top: 16px"
+            data-restart-service="xray"
+          >
+            重启 Xray</button
+          ><button
+            class="btn"
+            style="margin-top: 16px"
+            data-restart-service="hysteria2"
+          >
+            重启 Hysteria2</button
+          ><button
+            class="btn hidden"
+            id="restartCaddy"
+            style="margin-top: 12px"
+            data-restart-service="caddy"
+          >
+            重启 Caddy</button
+          ><button
+            class="btn primary"
+            style="margin-top: 12px"
+            data-restart-service="all"
+          >
+            重启当前组合全部服务
+          </button>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn" data-close="serviceModal">关闭</button>
+        </div>
+      </div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script src="assets/index.js"></script>
+  </body>
+</html>

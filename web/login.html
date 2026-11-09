@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Dual Protocol Fix · 登录</title>
+    <link rel="stylesheet" href="assets/style.css" />
+  </head>
+  <body class="login-page">
+    <form class="card" id="login">
+      <div class="mark">DP</div>
+      <h1>管理你的双协议节点</h1>
+      <p class="sub">Dual Protocol Fix · 私有网络控制台</p>
+      <label for="pw">访问密码</label
+      ><input
+        id="pw"
+        type="password"
+        autocomplete="current-password"
+        autofocus
+        required
+      /><button id="submit">进入面板</button>
+      <div id="err"></div>
+      <div class="hint">
+        面板由 TLS、随机路径和密码保护。REALITY 私钥绝不会发送到浏览器。
+      </div>
+    </form>
+    <script src="assets/login.js"></script>
+  </body>
+</html>
